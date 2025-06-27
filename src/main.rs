@@ -4,6 +4,7 @@ use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use anyhow::{anyhow, Context, Result};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about)]
@@ -44,8 +45,8 @@ fn main() -> io::Result<()> {
             for pat in expanded_patterns {
                 println!("Intentando: {} con : {}", pat, hash_type);
                 match run_hashcat(&args.input_file, &args.output, &args.alphabet, &pat, hash_type) {
-                    Some(result) => println!("[{}]: {}", pat, result),
-                    None => println!("[{}]: Error desconocido", pat),
+                    Ok(result) => println!("[{}]: {}", pat, result),
+                    Err(e) => println!("[{}]: {}", pat, e),
                 }
             }
         }
@@ -79,7 +80,7 @@ fn run_hashcat(
     alphabet: &str,
     pattern: &str,
     hash_type: &usize,
-) -> Option<String> {
+) -> Result<String> {
     let hashcat_cmd = get_hashcat_command();
 
     let output_result = Command::new(hashcat_cmd)
@@ -97,13 +98,13 @@ fn run_hashcat(
         .arg("-o")
         .arg(output.to_string_lossy().to_string())
         .output()
-        .ok()?;
+        .with_context(|| "failed to execute hashcat")?;
 
     if output_result.status.success() {
-        Some("OK".to_string())
+        Ok("OK".to_string())
     } else {
-        Some(format!(
-            "Error: {}",
+        Err(anyhow!(
+            "hashcat error: {}",
             String::from_utf8_lossy(&output_result.stderr)
         ))
     }
