@@ -4,6 +4,7 @@ use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use auto_hash::expand_variable_patterns;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about)]
@@ -59,19 +60,6 @@ fn main() -> io::Result<()> {
 }
 
 
-fn expand_variable_patterns(base_pattern: &str, min: usize, max: usize) -> Vec<String> {
-    let mut patterns = Vec::new();
-    if base_pattern.contains("?x") {
-        for len in min..=max {
-            let replacement = "?1".repeat(len);
-            let pat = base_pattern.replace("?x", &replacement);
-            patterns.push(pat);
-        }
-    } else {
-        patterns.push(base_pattern.to_string());
-    }
-    patterns
-}
 
 fn run_hashcat(
     file_path: &Path,
