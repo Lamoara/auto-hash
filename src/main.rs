@@ -27,7 +27,10 @@ struct Args {
     patterns: Vec<String>,
 
     #[arg(long)]
-    t: Vec<usize>
+    t: Vec<usize>,
+
+    #[arg(long, default_value = "3")]
+    attack_mode: u8,
 }
 
 fn main() -> io::Result<()> {
@@ -43,7 +46,14 @@ fn main() -> io::Result<()> {
 
             for pat in expanded_patterns {
                 println!("Intentando: {} con : {}", pat, hash_type);
-                match run_hashcat(&args.input_file, &args.output, &args.alphabet, &pat, hash_type) {
+                match run_hashcat(
+                    &args.input_file,
+                    &args.output,
+                    &args.alphabet,
+                    &pat,
+                    hash_type,
+                    args.attack_mode,
+                ) {
                     Some(result) => println!("[{}]: {}", pat, result),
                     None => println!("[{}]: Error desconocido", pat),
                 }
@@ -79,12 +89,13 @@ fn run_hashcat(
     alphabet: &str,
     pattern: &str,
     hash_type: &usize,
+    attack_mode: u8,
 ) -> Option<String> {
     let hashcat_cmd = get_hashcat_command();
 
     let output_result = Command::new(hashcat_cmd)
         .arg("-a")
-        .arg("3")
+        .arg(attack_mode.to_string())
         .arg("-m")
         .arg(hash_type.to_string())
         .arg("-w")
