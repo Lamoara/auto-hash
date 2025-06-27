@@ -27,17 +27,32 @@ struct Args {
     patterns: Vec<String>,
 
     #[arg(long)]
+    pattern_file: Option<PathBuf>,
+
+    #[arg(long)]
     t: Vec<usize>
 }
 
 fn main() -> io::Result<()> {
     let args = Args::parse();
 
+    let mut patterns = args.patterns.clone();
+    if let Some(path) = args.pattern_file.as_ref() {
+        let file = File::open(path)?;
+        for line in BufReader::new(file).lines() {
+            if let Ok(pat) = line {
+                if !pat.trim().is_empty() {
+                    patterns.push(pat);
+                }
+            }
+        }
+    }
+
     println!("Archivo de salida de hashcat: {}", args.output.display());
-        
+
     println!("Procesando archivo");
 
-    for pattern in &args.patterns {
+    for pattern in &patterns {
         for hash_type in args.t.iter() {
             let expanded_patterns = expand_variable_patterns(pattern, args.min, args.max);
 
